@@ -1,0 +1,251 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<meta name="generator" content="jemdoc, see http://jemdoc.jaboc.net/" />
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link rel="stylesheet" href="jemdoc.css" type="text/css" />
+<link rel="stylesheet" href="http://fonts.googleapis.com/earlyaccess/notosansjp.css" type="text/css" />
+<title>Publications</title>
+<!-- MathJax -->
+<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async>
+</script>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+	  TeX: { equationNumbers: { autoNumber: "AMS" } }
+});
+</script>
+<!-- End MathJax -->
+
+
+</head>
+<body>
+<table summary="Table for page layout." id="tlayout">
+<tr valign="top">
+<td id="layout-menu">
+<div class="menu-category">Masako Kishida</div>
+<div class="menu-item"><a href="index.html">Home</a></div>
+<div class="menu-item"><a href="biography.html">Biography</a></div>
+<div class="menu-item"><a href="docs/kishida_cv.pdf">CV</a></div>
+<div class="menu-category">Research</div>
+<div class="menu-item"><a href="projects.html">Projects</a></div>
+<div class="menu-item"><a href="publications.html" class="current">Publications</a></div>
+<div class="menu-item"><a href="positions.html">Positions</a></div>
+<div class="menu-category">日本語</div>
+<div class="menu-item"><a href="index_jp.html">ホーム</a></div>
+</td>
+<td id="layout-content">
+<div id="toptitle">
+<h1>Publications</h1>
+</div>
+
+<p>Selected works are listed below.
+For a complete list, see <a href="docs/kishida_cv.pdf" target=&ldquo;blank&rdquo;>CV</a> or <a href="https://researchmap.jp/m.kishida/?lang=english" target=&ldquo;blank&rdquo;>researchmap</a>.
+</p>
+
+<h2>Recent preprints</h2>
+<ul>
+<li><p>M. Kishida, “Distributionally Robust Safety Verification of Neural Networks via Worst-Case CVaR,” 
+<a href="https://arxiv.org/abs/2509.17413 ">arxiv</a></p>
+</li>
+</ul>
+
+<h2>Last few years (fetched from researchmap)</h2>
+<ul id="publist">
+</ul>
+
+<script>
+(function () {
+  const UL_ID = 'publist';
+  const PERMALINK = 'm.kishida';
+  const ENDPOINT = `https://api.researchmap.jp/${PERMALINK}/published_papers`;
+  const PAGE_SIZE = 200;
+  const YEARS_BACK = 3;
+  const HILIGHT_NAMES = [/Kishida/i, /岸田昌子/];
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else run();
+
+  async function run() {
+    const ul = document.getElementById(UL_ID);
+    if (!ul) return;
+    ul.innerHTML = '<li><p>Loading…</p></li>';
+
+    try {
+      // ===== データ取得 =====
+      let start = 0;
+      const all = [];
+      while (true) {
+        const url = `${ENDPOINT}?limit=${PAGE_SIZE}&start=${start}`;
+        const resp = await fetch(url, { cache: 'no-store' });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const json = await resp.json();
+        const chunk =
+          Array.isArray(json?.items) ? json.items :
+          Array.isArray(json?.result) ? json.result :
+          Array.isArray(json) ? json : [];
+        if (!chunk.length) break;
+        all.push(...chunk);
+        if (chunk.length < PAGE_SIZE) break;
+        start += chunk.length;
+        await new Promise(r => setTimeout(r, 100));
+      }
+
+      // ===== ヘルパ =====
+      const esc = s => String(s)
+        .replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+      const getTextJaFirst = v => {
+        if (!v) return '';
+        if (typeof v === 'string') return v;
+        if (typeof v === 'number') return String(v);
+        if (typeof v === 'object')
+          return v.ja || v.jp || v['ja-JP'] || v.text_ja || v.name_ja ||
+                 v.text || v.name || v.full_name ||
+                 Object.values(v).find(x => typeof x === 'string') || '';
+        return '';
+      };
+
+      const titleOf   = it => getTextJaFirst(it.paper_title) || getTextJaFirst(it.title) || '(no title)';
+      const journalOf = it => getTextJaFirst(it.publication_name) || getTextJaFirst(it.journal_name) || '';
+      const dateOf    = it => getTextJaFirst(it.publication_date || it.published_date || it.published_paper_date || '');
+      const doiOf     = it => {
+        const a = it?.identifiers?.doi;
+        if (Array.isArray(a) && a.length) return a[0];
+        return it.doi || it.DOI || '';
+      };
+
+      // ===== 著者抽出 =====
+      const hasCJK = s => /[\u3040-\u30FF\u4E00-\u9FFF]/.test(String(s));
+      const splitNamesFromString = s =>
+        String(s).split(/;|、|，|＆|&|, and | and |,|\u3001/gi)
+          .map(t => t.replace(/^\s*and\s+/i, '').trim())
+          .filter(Boolean);
+
+      const explodeAuthorsContainer = v => {
+        if (!v) return [];
+        if (Array.isArray(v)) return v;
+        if (typeof v === 'string') return splitNamesFromString(v);
+        const out = [];
+        for (const k of ['items','list','authors','author','names','name','people','persons','creators','contributors'])
+          if (Array.isArray(v[k])) out.push(...v[k]);
+        const nested = Object.values(v).filter(x => Array.isArray(x)).flat();
+        if (nested.length) out.push(...nested);
+        return out.length ? out : [v];
+      };
+
+      const pickNameFromNode = a => {
+        if (!a) return '';
+        if (typeof a === 'string') return a;
+        const direct = a.name || a.full_name || a.display_name || a.creator_name || a.author_name;
+        if (direct) return getTextJaFirst(direct);
+        if (a.person && (a.person.name || a.person.full_name))
+          return getTextJaFirst(a.person.name || a.person.full_name);
+        const family = a.family || a.family_name || a?.name?.family;
+        const given  = a.given  || a.given_name  || a?.name?.given;
+        if (family || given) return [given, family].filter(Boolean).join(' ').trim();
+        for (const k in a) {
+          const v = a[k];
+          if (v && typeof v === 'object') {
+            const s = pickNameFromNode(v);
+            if (s) return s;
+          }
+        }
+        return '';
+      };
+
+      const authorsOf = it => {
+        const raw = [it.authors, it.author, it.creators, it.creator, it.contributors, it.contributor]
+          .filter(Boolean)
+          .flatMap(explodeAuthorsContainer);
+
+        let names = raw.flatMap(node => {
+          if (typeof node === 'string') return splitNamesFromString(node);
+          if (Array.isArray(node)) return node.map(pickNameFromNode);
+          return [pickNameFromNode(node)];
+        }).map(s => s && s.replace(/^[\s,;]+|[\s,;]+$/g, '')).filter(Boolean);
+
+        if (!names.length && typeof it.citation === 'string') {
+          const head = it.citation.split(':')[0] || '';
+          names = splitNamesFromString(head).slice(0, 20);
+        }
+
+        // 日本語が含まれているなら日本語だけ残す
+        if (names.some(hasCJK)) names = names.filter(hasCJK);
+
+        names = Array.from(new Set(names));
+        return names.length ? names : ['(unknown)'];
+      };
+
+      // ===== フィルタ・整形 =====
+      const NOW_YEAR = new Date().getFullYear();
+      const keep = all.filter(it => {
+        const y = parseInt((dateOf(it) || '').slice(0, 4), 10);
+        return Number.isFinite(y) && y >= NOW_YEAR - (YEARS_BACK - 1);
+      });
+
+      const dateKey = d => (d || '').replace(/[^0-9]/g, '');
+      keep.sort((a, b) => dateKey(dateOf(b)).localeCompare(dateKey(dateOf(a))));
+
+      // ===== 描画 =====
+      ul.innerHTML = '';
+      for (const it of keep) {
+        const authorsList = authorsOf(it);
+        const authorsHTML = authorsList
+          .map(n => HILIGHT_NAMES.some(rx => rx.test(n)) ? `<strong>${esc(n)}</strong>` : esc(n))
+          .join(', ');
+
+        const title = esc(titleOf(it));
+        const journal = esc(journalOf(it));
+        const year = esc((dateOf(it) || '').slice(0, 4));
+        const doi = doiOf(it);
+        const url = it.url || it.link || (doi ? `https://doi.org/${doi}` : null);
+
+        const textHTML = [
+          authorsHTML && `${authorsHTML}: `,
+          title,
+          journal && `, ${journal}`,
+          year && ` (${year})`
+        ].filter(Boolean).join('');
+
+        const li = document.createElement('li');
+        const p  = document.createElement('p');
+        const htmlPieces = [];
+if (authorsHTML) htmlPieces.push(`${authorsHTML}: `);
+
+// タイトルだけリンクにする
+if (url) {
+  htmlPieces.push(`<a href="${esc(url)}" target="_blank" rel="noopener">${title}</a>`);
+} else {
+  htmlPieces.push(title);
+}
+
+// 残り（ジャーナルと年）はプレーンテキスト
+if (journal) htmlPieces.push(`, ${journal}`);
+if (year) htmlPieces.push(` (${year})`);
+
+p.innerHTML = htmlPieces.join('');
+        li.appendChild(p);
+        ul.appendChild(li);
+      }
+
+      if (!ul.children.length)
+        ul.innerHTML = '<li><p>No records in last 3 years.</p></li>';
+
+    } catch (e) {
+      console.error(e);
+      ul.innerHTML = `<li><p style="color:#b00">Error: ${e.message}</p></li>`;
+    }
+  }
+})();
+</script>
+
+<div id="footer">
+
+</div>
+</td>
+</tr>
+</table>
+</body>
+</html>
