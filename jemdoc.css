@@ -1,5 +1,5 @@
 /* Default css file for jemdoc. Modified by Kishida*/
-@import url(http://fonts.googleapis.com/earlyaccess/notosansjp.css);
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
 
 table#tlayout {
     border: none;
@@ -8,15 +8,14 @@ table#tlayout {
 }
 
 body {
-	background: white;
-	font-size: 10px;
-         font-size: 1rem;
-         font-weight: 400;
-        font-family: "Noto Sans Japanese", sans-serif;
-   line-height: 1;
-  letter-spacing: 1px;
+    background: white;
+    color: #222;
+    font-family: "Noto Sans JP", sans-serif;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: normal;
 }
-
 
 #layout-menu {
 	background: #f6f6f6;
